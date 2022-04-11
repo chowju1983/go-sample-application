@@ -42,16 +42,8 @@ func init() {
 
 func HandleRequest(ctx context.Context, requestEvent events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
-	var inputPayload InputEvent
-	json.Unmarshal([]byte(requestEvent.Body), &inputPayload)
-
-	requestid := inputPayload.Requestid
-	fmt.Println("Request Id in Body:", requestid)
-	requestid = requestEvent.QueryStringParameters["requestid"]
-	fmt.Println("Query Parameter", requestid)
-	requestid = requestEvent.PathParameters["requestid"]
+	requestid := requestEvent.PathParameters["requestid"]
 	fmt.Println("Path Parameter", requestid)
-	fmt.Println("Context", ctx)
 
 	req := parser.Request{requestid, db}
 	validator := validator.Validator{}
@@ -109,7 +101,7 @@ func HandleRequest(ctx context.Context, requestEvent events.APIGatewayProxyReque
 	resultMLModelCall[0] = <-modelc
 
 	// Print return values from ML model task
-	if resultMLModelCall[0].GetStatus() == true {
+	if resultMLModelCall[0].GetStatus() {
 		fmt.Println(resultMLModelCall[0].GetResultData(), " returns from RNN model")
 
 		//Proceed further after completion of RNN model call

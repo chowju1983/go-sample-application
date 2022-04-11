@@ -14,10 +14,8 @@ type AccountManagement struct {
 func (acct AccountManagement) AccountManagement(amc chan string, msg parser.Message) {
 	acct.startAccountManager()
 	acct.collectAccountProfileData(msg)
-	//time.Sleep(2 * time.Second)
 	acct.oneExposerCalculation()
 	acct.accountPasswordInformation()
-	//time.Sleep(2 * time.Second)
 	acct.endAccountManager()
 	acct.collectProductData(msg)
 	acct.collectCustomerProfileData(msg)
