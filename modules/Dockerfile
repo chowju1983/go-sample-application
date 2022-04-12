@@ -15,5 +15,5 @@ COPY --from=builder /src/app/go /var/app/
 COPY --from=builder /src/app/db.sql /var/app/
 EXPOSE 8080
 ENV PORT 8080
-ENV HOST 18.212.164.137
-CMD ["/var/app/lambda", "/var/app/db.sql"]
+ENV HOST <DATABASE_HOST>
+CMD ["/var/app/lambda", "/var/app/scripts/db.sql"]
