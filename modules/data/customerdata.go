@@ -1,18 +1,19 @@
-package parser
+package data
 
 import (
 	"fmt"
 	"modules/common"
-	"modules/dboperations"
+
 	"strconv"
+	"util/dbutil"
 )
 
-type Request struct {
+type InputRequest struct {
 	Requestid    string
-	Dboperations dboperations.DBOperations
+	Dboperations dbutil.DBOperations
 }
 
-type Message struct {
+type CustomerRecord struct {
 	sessionid  string
 	accountno  string
 	cardtype   string
@@ -23,41 +24,41 @@ type Message struct {
 	cardtypeid int
 }
 
-func (m *Message) GetSessionid() string {
+func (m *CustomerRecord) GetSessionid() string {
 	return m.sessionid
 }
-func (m *Message) GetAccountno() string {
+func (m *CustomerRecord) GetAccountno() string {
 	return m.accountno
 }
 
-func (m *Message) GetCardno() string {
+func (m *CustomerRecord) GetCardno() string {
 	return m.cardno
 }
 
-func (m *Message) GetPin() int {
+func (m *CustomerRecord) GetPin() int {
 	return m.pin
 }
 
-func (m *Message) GetCardtype() string {
+func (m *CustomerRecord) GetCardtype() string {
 	return m.cardtype
 }
 
-func (m *Message) GetAav() int {
+func (m *CustomerRecord) GetAav() int {
 	return m.aav
 }
 
-func (m *Message) GetCustid() string {
+func (m *CustomerRecord) GetCustid() string {
 	return m.custid
 }
 
-func (m *Message) GetCardtypeid() int {
+func (m *CustomerRecord) GetCardtypeid() int {
 	return m.cardtypeid
 }
 
-func (r Request) AuthMessageParser() Message {
+func (r InputRequest) CustomerData() CustomerRecord {
 
 	db := r.Dboperations.GetDB()
-	msg := Message{}
+	msg := CustomerRecord{}
 	fmt.Println("Auth message parsing...", db)
 	reqid, err := strconv.Atoi(r.Requestid)
 	common.CheckError(err)

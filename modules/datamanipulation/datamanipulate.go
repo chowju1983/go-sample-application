@@ -1,44 +1,36 @@
-package accountmanagement
+package datamanipulation
 
 import (
 	"fmt"
 	"modules/common"
-	"modules/dboperations"
-	"modules/parser"
+	"modules/data"
+	"util/dbutil"
 )
 
-type AccountManagement struct {
-	Dboperations dboperations.DBOperations
+type CustomerDataRecordManagement struct {
+	Dboperations dbutil.DBOperations
 }
 
-func (acct AccountManagement) AccountManagement(amc chan string, msg parser.Message) {
-	acct.startAccountManager()
-	acct.collectAccountProfileData(msg)
-	acct.oneExposerCalculation()
-	acct.accountPasswordInformation()
-	acct.endAccountManager()
-	acct.collectProductData(msg)
-	acct.collectCustomerProfileData(msg)
-	// Set value for channel
-	amc <- "TRUE"
+func (cdm CustomerDataRecordManagement) SampleDataManipulate(cd chan string, msg data.CustomerRecord) {
+	cdm.startProcess()
+	cdm.collectSampleData1(msg)
+	cdm.collectSampleData2(msg)
+	cdm.collectSampleData3(msg)
+	cdm.endProcess()
+	cd <- "TRUE"
 }
-func (acct AccountManagement) CustAccountDetail() {
-	fmt.Println("Customer accumer...")
-	fmt.Println("Exposure/risk variables...")
+
+func (acct CustomerDataRecordManagement) SampleProcess3() {
+	fmt.Println("SampleProcess3...")
 }
-func (acct AccountManagement) SEAccums() {
-	fmt.Println("SE accums...")
+func (acct CustomerDataRecordManagement) SampleProcess1() {
+	fmt.Println("SampleProcess1 ...")
 }
-func (acct AccountManagement) LockAccount() {
-	fmt.Println("Locking account...")
+func (acct CustomerDataRecordManagement) SampleProcess2() {
+	fmt.Println("SampleProcess2...")
 }
-func (acct AccountManagement) accountPasswordInformation() {
-	fmt.Println("Account password information...")
-}
-func (acct AccountManagement) oneExposerCalculation() {
-	fmt.Println("One exposer calculation.....")
-}
-func (acct AccountManagement) collectProductData(msg parser.Message) {
+
+func (acct CustomerDataRecordManagement) collectSampleData2(msg data.CustomerRecord) {
 
 	db := acct.Dboperations.GetDB()
 	rows, err := db.Query(`select card_type, limits, currency from "FraudRiskSchema"."ProductData" prd where prd.card_type_id = $1`, msg.GetCardtypeid())
@@ -54,14 +46,14 @@ func (acct AccountManagement) collectProductData(msg parser.Message) {
 	}
 
 	fmt.Println("--------------------------")
-	fmt.Println("Collect Product Data.....")
+	fmt.Println("Collect Sample Data 2.....")
 	fmt.Println("--------------------------")
 	fmt.Println("Card type - ", cardtype)
 	fmt.Println("Limits - ", limits)
 	fmt.Println("Currency - ", currency)
 	fmt.Println("--------------------------")
 }
-func (acct AccountManagement) collectCustomerProfileData(msg parser.Message) {
+func (acct CustomerDataRecordManagement) collectSampleData3(msg data.CustomerRecord) {
 
 	db := acct.Dboperations.GetDB()
 	rows, err := db.Query(`select cust_id, name, address, age, phone, email from "FraudRiskSchema"."CustomerProfile" cust where cust.cust_id = $1`, msg.GetCustid())
@@ -90,13 +82,13 @@ func (acct AccountManagement) collectCustomerProfileData(msg parser.Message) {
 	fmt.Println("Email - ", email)
 	fmt.Println("--------------------------")
 }
-func (acct AccountManagement) startAccountManager() {
-	fmt.Println("Start account manager...")
+func (acct CustomerDataRecordManagement) startProcess() {
+	fmt.Println("Starting Data Manipulation Process...")
 }
-func (acct AccountManagement) collectAccountProfileData(msg parser.Message) {
+func (acct CustomerDataRecordManagement) collectSampleData1(msg data.CustomerRecord) {
 
 	fmt.Println("-------------------------------")
-	fmt.Println("Collect Account Profile Data...")
+	fmt.Println("Collect Sample  Data 1...")
 	fmt.Println("-------------------------------")
 	fmt.Println("Account no - ", msg.GetAccountno())
 	fmt.Println("Card type - ", msg.GetCardtype())
@@ -104,6 +96,6 @@ func (acct AccountManagement) collectAccountProfileData(msg parser.Message) {
 	fmt.Println("-------------------------------")
 
 }
-func (acct AccountManagement) endAccountManager() {
-	fmt.Println("End account manager...")
+func (acct CustomerDataRecordManagement) endProcess() {
+	fmt.Println("Ending Data Manipulation Process")
 }

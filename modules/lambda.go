@@ -2,16 +2,15 @@ package main
 
 import (
 	"context"
+	"data/customerdata"
+	"datamanipulation/datamanipulate"
+	"datareconciliation/reconciledata"
 	"encoding/json"
 	"fmt"
-	"modules/accountmanagement"
-	"modules/dboperations"
-	"modules/email"
-	"modules/mlmodel"
-	"modules/parser"
-	"modules/payment"
-	"modules/validator"
+	"notify/notification"
 	"os"
+	"processdata/processdata"
+	"util/dbutil"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -29,89 +28,72 @@ type ResponseEvent struct {
 	Message string `json:"Message:"`
 }
 
-var db dboperations.DBOperations
+var db dbutil.DBOperations
 
 func init() {
 	// Get DB connection
 	fmt.Println("Loading DB Schemas")
 	dbfilepath := os.Getenv("DB_FILENAME")
 	fmt.Println(dbfilepath)
-	db = dboperations.GetDbInstance(dbfilepath)
+	db = dbutil.loadInitialData(dbfilepath)
 	fmt.Println("DB connection established", db.GetDB())
 }
 
 func HandleRequest(ctx context.Context, requestEvent events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
-	requestid := requestEvent.PathParameters["requestid"]
-	fmt.Println("Path Parameter", requestid)
+	customerid := requestEvent.PathParameters["customerid"]
+	fmt.Println("Path Parameter", customerid)
 
-	req := parser.Request{requestid, db}
-	validator := validator.Validator{}
-	am := accountmanagement.AccountManagement{db}
-	email := email.Email{}
-	payment := payment.Payment{}
-	model := mlmodel.MLModelCall{}
+	req := customerdata.InputRequest{customerid, db}
+	cdm := datamanipulate.CustomerDataRecordManagement{db}
+	notification := notification.Notification{}
+	recondata := reconciledata.ReconcileData{}
+	res := processdata.ResultDataFetch{}
 
-	msg := req.AuthMessageParser()
-	if !validator.PinValidation(msg.GetPin(), 7456) {
-		fmt.Println("Invalid PIN")
-		os.Exit(1)
-	} else {
-		fmt.Println("PIN validation...SUCCESS")
-	}
+	msg := req.CustomerData()
 
-	if !validator.AavValidation(msg.GetAav(), 234) {
-		fmt.Println("Invalid AAV")
-		os.Exit(1)
+	// Spawn customer data management goroutine
+	cd := make(chan string)
+	go cdm.SampleDataManipulate(cd, msg)
 
-	} else {
-		fmt.Println("AAV validation...SUCCESS")
-	}
+	// Spawn notification goroutine
+	emailChannel := make(chan string)
+	go notification.Notify(emailChannel)
 
-	// Start account management as one task 1
-	amc := make(chan string)
-	go am.AccountManagement(amc, msg)
-
-	// Start email in another task 2
-	emailc := make(chan string)
-	go email.EmailAgeNeustar(emailc)
-
-	// Waiting for return value from above two tasks - AccountManagement & EmailAgeNeustar
-	resultAcctMngt := <-amc
-	resultEmail := <-emailc
+	// Await Results - CustomerDataRecordManagement & Notification
+	rescdm := <-cd
+	resultNotification := <-emailChannel
 
 	// Print two return values from tasks
-	fmt.Println(resultAcctMngt, " returns from Account Management task.")
-	fmt.Println(resultEmail, " returns from Email task")
+	fmt.Println(rescdm, " returns from Customer Data Record Management.")
+	fmt.Println(resultNotification, " returns from Notification task")
 
 	//Proceed further after completion of two tasks only
-	payment.PaymentVariableCalculation()
-	am.SEAccums()
-	validator.HSMCIDValidation()
-	am.LockAccount()
+	recondata.ReconcileCustomerData()
+	cdm.SampleProcess1()
+	cdm.SampleProcess2()
 
-	// Start ASYNC call to get results from RNN model
-	modelc := make(chan mlmodel.MLModelCall)
-	go model.RNNModelCall(modelc)
+	// Spawn another sample goroutine
+	resultChannel := make(chan processdata.ResultData)
+	go res.ResultDataFetch(resultChannel)
 
-	am.CustAccountDetail()
+	cdm.CustAccountDetail()
 
-	// Waiting for return value from above ASYNC task - MLModelCall
-	resultMLModelCall := make([]mlmodel.MLModelCall, 1)
-	resultMLModelCall[0] = <-modelc
+	// Waiting for return value from goroutine
+	result := make([]processdata.ResultDataFetch, 1)
+	result[0] = <-resultChannel
 
-	// Print return values from ML model task
-	if resultMLModelCall[0].GetStatus() {
-		fmt.Println(resultMLModelCall[0].GetResultData(), " returns from RNN model")
+	if result[0].GetStatus() {
+		fmt.Println(result[0].GetResultData(), " returns from processdate")
 
-		//Proceed further after completion of RNN model call
-		model.GBMModelExecuation()
+		//Proceed further after completion
+		res.ResultDataSampleExecute()
 	} else {
-		fmt.Println("No Model data hence stopping program...")
+		fmt.Println("Data Processing Error")
 	}
 
 	returnResponse := ResponseEvent{
-		Message: fmt.Sprintf("Request processed Successfully for requestid %s", requestid),
+		Message: fmt.Sprintf("Request processed successfully for customerid %s", customerid),
 	}
 	returnResponseJson, _ := json.Marshal(returnResponse)
 
